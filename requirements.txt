@@ -1,0 +1,8 @@
+Flask
+pandas
+ibm-cos-sdk
+ibm-cos-sdk-core
+ibm-cos-sdk-s3transfer
+mysql-connector
+Flask-Cors
+pymongo
