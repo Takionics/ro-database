@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="ibm_db_conns-takionics3261",
+    name="ro_database_takionics3261",
     version="0.0.1",
     author="Islam Elkadi",
     author_email="islam.elkadi@gmail.com",
