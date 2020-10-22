@@ -1,6 +1,0 @@
-/__pycache__/
-.cfignore
-runtime.txt
-Procfile
-manifest.yml
-.gitignore

@@ -1,0 +1,2 @@
+class MissingCreds(Exception):
+    pass

@@ -1,4 +1,8 @@
-from utils import *
+# Mongo-DB Library imports
+import os
+import json
+import pymongo
+from pymongo import MongoClient
 
 class NoSQL():
 
@@ -6,10 +10,26 @@ class NoSQL():
         """
             Initializes NoSQL class and retrieves associated credentials
         """
-        self._mongo_cli = MongoClient(
-            mongo_composed,
-            ssl = True,
-            ssl_ca_certs = "./tmpCert.crt")        
+
+        if NOSQL_ROOT_CRT in os.environ:
+            self._mongo_cli = MongoClient(
+                mongo_composed,
+                ssl = True,
+                ssl_ca_certs = os.getenv('NOSQL_ROOT_CRT'))
+        else:
+            raise MissingCreds("NOSQL_ROOT_CRT Not found in OS Environment!") 
+
+        if 'VCAP_SERVICES' in os.environ:
+            vcap = json.loads(os.getenv('VCAP_SERVICES'))
+            print('Found VCAP_SERVICES')
+
+            if 'databases-for-mongodb' in vcap:
+                mongoCreds = vcap["databases-for-mongodb"][0]["credentials"]
+                mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
+            else:
+                raise MissingCreds("NoSQL creds not fouund in OS Environment!")
+        else:
+            raise MissingCreds("VCAP_SERVICES Not found in OS Environment!") 
 
     def get_database(self):
         """
@@ -69,4 +89,4 @@ class NoSQL():
         return id
 
 if __name__ == '__main__':
-    nosql = NoSQL()
+    py_nosql = NoSQL()

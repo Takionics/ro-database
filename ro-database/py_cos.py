@@ -1,4 +1,9 @@
-from utils import *
+# Cloud object storage library imports
+import io
+import os
+import json
+import ibm_boto3
+from ibm_botocore.client import Config, ClientError
 
 class COS():
 
@@ -9,6 +14,24 @@ class COS():
                 2. initializing ibm_boto3 COS client portal
                 3. initializing ibm_boto3 transfer configuration settings
         """
+
+        if 'VCAP_SERVICES' in os.environ:
+            vcap = json.loads(os.getenv('VCAP_SERVICES'))
+            print('Found VCAP_SERVICES')
+
+            # Cloud object storage
+            if 'cloud-object-storage' in vcap:
+                s3Credential = vcap['cloud-object-storage'][0]['credentials']
+                COS_ENDPOINT = os.getenv('COS_ENDPOINT') #'https://s3.us-east.cloud-object-storage.appdomain.cloud'
+                COS_API_KEY_ID = s3Credential['apikey']
+                COS_AUTH_ENDPOINT = "https://iam.cloud.ibm.com/identity/token"
+                COS_RESOURCE_CRN = s3Credential['resource_instance_id']
+            else:
+                raise MissingCreds("COS creds not fouund in OS Environment!")
+        else:
+            raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
+            
+
         self._cos_re = ibm_boto3.resource(
             service_name="s3",
             ibm_api_key_id=COS_API_KEY_ID,
@@ -66,9 +89,9 @@ class COS():
         else:
             return buckets
 
-    def get_bucket_contents(self, bucket_name, prefix="", max_keys=100):
+    def get_bucket_contents(self, bucket_name, prefix="", max_keys=100000):
         """
-            Retrieves list of bucket contents with limit of 100 list entries
+            Retrieves list of bucket contents with limit of 100000 list entries
             by default unless limit is otherwise specified
 
             Parameters:
@@ -146,7 +169,7 @@ class COS():
             print(f"Unable to retrieve file contents: {e}")
         else:
             file = io.BytesIO(file["Body"].read())
-            item = jsonify_cos(file, item_name)
+            item = pd.read_csv(file)
             return item
 
     def upload_file_cos(self, bucket_name, item_name, file):
@@ -213,5 +236,17 @@ class COS():
             print(f"Unable to delete bucket: {e}")
             raise
 
+    def create_text_file(self, bucket_name, item_name, file_text):
+        print("Creating new item: {0}".format(item_name))
+        try:
+            self._cos_re.Object(bucket_name, item_name).put(Body=file_text)
+            print("Item: {0} created!".format(item_name))
+        except ClientError as be:
+            print("CLIENT ERROR: {0}\n".format(be))
+            # raise
+        except Exception as e:
+            print("Unable to create text file: {0}".format(e))
+            # raise
+
 if __name__ == '__main__':
-    cos = COS()
+    py_cos = COS()
