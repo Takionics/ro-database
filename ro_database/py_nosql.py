@@ -40,7 +40,7 @@ class NoSQL():
             ssl = True,
             ssl_ca_certs = "./../../../app/tmpCert.crt")
 
-    def get_database(self):
+    def get_database(self, db_name):
         """
             Retrieves mongodb object for specified database name
 
@@ -48,7 +48,7 @@ class NoSQL():
                 db_name: <str>
                         name of target database
         """
-        db = self._mongo_cli.get_database(nosql_db_name)
+        db = self._mongo_cli.get_database(db_name)
         return db
 
     def update_collection(self, col_name, document):
