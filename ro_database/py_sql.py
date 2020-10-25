@@ -19,13 +19,13 @@ class SQL():
 
             # PostgreSQL database
             if 'databases-for-postgresql' in vcap:
-                pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
-                pgsqlHost = pgsqlCreds["hosts"][0]["hostname"]
-                pgsqlPort = pgsqlCreds["hosts"][0]["port"]
-                pgsqlUser = pgsqlCreds["authentication"]["username"]
-                pgsqlPass = pgsqlCreds["authentication"]["password"]
-                pgsqlDbname = pgsqlCreds["database"]
-                pgsqlAlcehmy = pgsqlCreds["composed"][0]
+                self._pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
+                self._pgsqlHost = self._pgsqlCreds["hosts"][0]["hostname"]
+                self._pgsqlPort = self._pgsqlCreds["hosts"][0]["port"]
+                self._pgsqlUser = self._pgsqlCreds["authentication"]["username"]
+                self._pgsqlPass = self._pgsqlCreds["authentication"]["password"]
+                self._pgsqlDbname = self._pgsqlCreds["database"]
+                self._pgsqlAlcehmy = self._pgsqlCreds["composed"][0]
             else:
                 raise MissingCreds("SQL creds not fouund in OS Environment!")
         elif os.path.isfile('vcap_services.json'):
@@ -35,24 +35,24 @@ class SQL():
                 
             # PostgreSQL database
             if 'databases-for-postgresql' in vcap:
-                pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
-                pgsqlHost = pgsqlCreds["hosts"][0]["hostname"]
-                pgsqlPort = pgsqlCreds["hosts"][0]["port"]
-                pgsqlUser = pgsqlCreds["authentication"]["username"]
-                pgsqlPass = pgsqlCreds["authentication"]["password"]
-                pgsqlDbname = pgsqlCreds["database"]
-                pgsqlAlcehmy = pgsqlCreds["composed"][0]
+                self._pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
+                self._pgsqlHost = self._pgsqlCreds["hosts"][0]["hostname"]
+                self._pgsqlPort = self._pgsqlCreds["hosts"][0]["port"]
+                self._pgsqlUser = self._pgsqlCreds["authentication"]["username"]
+                self._pgsqlPass = self._pgsqlCreds["authentication"]["password"]
+                self._pgsqlDbname = self._pgsqlCreds["database"]
+                self._pgsqlAlcehmy = self._pgsqlCreds["composed"][0]
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
 
-        self._conn_string = "host="+pgsqlHost+ \
-            " port="+str(pgsqlPort)+ \
-            " dbname="+pgsqlDbname+\
-            " user="+pgsqlUser+\
-            " password="+pgsqlPass
+        self._conn_string = "host="+self._pgsqlHost+ \
+                            " port="+str(self._pgsqlPort)+ \
+                            " dbname="+self._pgsqlDbname+\
+                            " user="+self._pgsqlUser+\
+                            " password="+self._pgsqlPass
 
         
-        self._alchemy_engine = create_engine(pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
+        self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
 
     def create(self, table_name: str, table_structure: list):
         """
