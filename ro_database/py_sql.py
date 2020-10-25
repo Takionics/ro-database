@@ -56,7 +56,7 @@ class SQL():
 
         
         self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
-
+ 
     def create(self, table_name: str, table_structure: list):
         """
             Creates new SQL table
