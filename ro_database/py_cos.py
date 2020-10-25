@@ -3,6 +3,8 @@ import io
 import os
 import json
 import ibm_boto3
+
+from utils import *
 from ibm_botocore.client import Config, ClientError
 
 class COS():
