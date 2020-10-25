@@ -11,7 +11,7 @@ class NoSQL():
             Initializes NoSQL class and retrieves associated credentials
         """
 
-        if NOSQL_ROOT_CRT in os.environ:
+        if 'NOSQL_ROOT_CRT' in os.environ:
             self._mongo_cli = MongoClient(
                 mongo_composed,
                 ssl = True,
