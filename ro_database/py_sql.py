@@ -28,8 +28,8 @@ class SQL():
                 self._pgsqlAlcehmy = self._pgsqlCreds["composed"][0]
             else:
                 raise MissingCreds("SQL creds not fouund in OS Environment!")
-        elif os.path.isfile('vcap_services.json'):
-            with open('vcap_services.json') as f:
+        elif os.path.isfile('/../../../app/vcap_services.json'):
+            with open('/../../../app/vcap_services.json') as f:
                 vcap = json.load(f)
                 print('Found local VCAP_SERVICES')
                 
