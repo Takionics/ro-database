@@ -108,7 +108,7 @@ class SQL():
             conn.close()
             return df
             
-    def update(self, df, df_name: str, target_update: bool, pmkey: str):
+    def update(self, df, df_name: str, schema: str, target_update: bool, pmkey: str):
         """
             Retrieve the mysql datatable to pandas dataframe
             Parameters:
@@ -128,6 +128,7 @@ class SQL():
         # print(records)
 
         # get the sql command
+        df_name = f"{schema}.{df_name}"
         dt_sql = "{} ({})".format(df_name, ','.join(column_names))
         df_sql = "VALUES({}{})".format("%s," * (len(column_names) - 1), "%s")
         
