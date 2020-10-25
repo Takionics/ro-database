@@ -147,7 +147,8 @@ class SQL():
         connection = psycopg2.connect(self._conn_string)
         cur = connection.cursor()
         connection.autocommit = True
-        psycopg2.extras.execute_batch(cur, sql_command, records, page_size = len(records))
+#         psycopg2.extras.execute_batch(cur, sql_command, records, page_size = len(records))
+        psycopg2.extras.execute_batch(cur, sql_command, records)
 #         except Exception as e:
 #             connection.rollback()
 #             print(e)
