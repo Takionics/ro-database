@@ -13,14 +13,6 @@ class NoSQL():
             Initializes NoSQL class and retrieves associated credentials
         """
 
-        # if 'NOSQL_ROOT_CRT' in os.environ:
-        self._mongo_cli = MongoClient(
-            mongo_composed,
-            ssl = True,
-            ssl_ca_certs = "./../../../app/tmpCert.crt")
-        # else:
-        #     raise MissingCreds("NOSQL_ROOT_CRT Not found in OS Environment!") 
-
         if 'VCAP_SERVICES' in os.environ:
             vcap = json.loads(os.getenv('VCAP_SERVICES'))
             print('Found VCAP_SERVICES')
@@ -30,7 +22,6 @@ class NoSQL():
                 mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
             else:
                 raise MissingCreds("NoSQL creds not fouund in OS Environment!")
-
         elif os.path.isfile('/../../../app/vcap_services.json'):
             with open('/../../../app/vcap_services.json') as f:
                 vcap = json.load(f)
@@ -41,9 +32,13 @@ class NoSQL():
                 mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
             else:
                 raise MissingCreds("NoSQL creds not fouund in OS Environment!")
-
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!") 
+
+        self._mongo_cli = MongoClient(
+            mongo_composed,
+            ssl = True,
+            ssl_ca_certs = "./../../../app/tmpCert.crt")
 
     def get_database(self):
         """
