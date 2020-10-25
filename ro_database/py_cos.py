@@ -28,6 +28,20 @@ class COS():
                 COS_RESOURCE_CRN = s3Credential['resource_instance_id']
             else:
                 raise MissingCreds("COS creds not fouund in OS Environment!")
+        elif os.path.isfile('vcap_services.json'):
+            with open('vcap_services.json') as f:
+                vcap = json.load(f)
+                print('Found local VCAP_SERVICES')
+
+                # Cloud object storage
+                if 'cloud-object-storage' in vcap:
+                    s3Credential = vcap['cloud-object-storage'][0]['credentials']
+                    COS_ENDPOINT = os.getenv('COS_ENDPOINT') #'https://s3.us-east.cloud-object-storage.appdomain.cloud'
+                    COS_API_KEY_ID = s3Credential['apikey']
+                    COS_AUTH_ENDPOINT = "https://iam.cloud.ibm.com/identity/token"
+                    COS_RESOURCE_CRN = s3Credential['resource_instance_id']
+                else:
+                    raise MissingCreds("Local COS creds not found!")
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
             

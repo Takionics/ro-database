@@ -28,6 +28,18 @@ class NoSQL():
                 mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
             else:
                 raise MissingCreds("NoSQL creds not fouund in OS Environment!")
+
+        elif os.path.isfile('vcap_services.json'):
+            with open('vcap_services.json') as f:
+                vcap = json.load(f)
+                print('Found local VCAP_SERVICES')
+
+            if 'databases-for-mongodb' in vcap:
+                mongoCreds = vcap["databases-for-mongodb"][0]["credentials"]
+                mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
+            else:
+                raise MissingCreds("NoSQL creds not fouund in OS Environment!")
+
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!") 
 

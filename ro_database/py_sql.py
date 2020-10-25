@@ -26,19 +26,33 @@ class SQL():
                 pgsqlPass = pgsqlCreds["authentication"]["password"]
                 pgsqlDbname = pgsqlCreds["database"]
                 pgsqlAlcehmy = pgsqlCreds["composed"][0]
-
-                self._conn_string = "host="+pgsqlHost+ \
-                    " port="+str(pgsqlPort)+ \
-                    " dbname="+pgsqlDbname+\
-                    " user="+pgsqlUser+\
-                    " password="+pgsqlPass
-
-                
-                self._alchemy_engine = create_engine(pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
             else:
                 raise MissingCreds("SQL creds not fouund in OS Environment!")
+        elif os.path.isfile('vcap_services.json'):
+            with open('vcap_services.json') as f:
+                vcap = json.load(f)
+                print('Found local VCAP_SERVICES')
+                
+            # PostgreSQL database
+            if 'databases-for-postgresql' in vcap:
+                pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
+                pgsqlHost = pgsqlCreds["hosts"][0]["hostname"]
+                pgsqlPort = pgsqlCreds["hosts"][0]["port"]
+                pgsqlUser = pgsqlCreds["authentication"]["username"]
+                pgsqlPass = pgsqlCreds["authentication"]["password"]
+                pgsqlDbname = pgsqlCreds["database"]
+                pgsqlAlcehmy = pgsqlCreds["composed"][0]
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
+
+        self._conn_string = "host="+pgsqlHost+ \
+            " port="+str(pgsqlPort)+ \
+            " dbname="+pgsqlDbname+\
+            " user="+pgsqlUser+\
+            " password="+pgsqlPass
+
+        
+        self._alchemy_engine = create_engine(pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
 
     def create(self, table_name: str, table_structure: list):
         """
