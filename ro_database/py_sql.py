@@ -111,7 +111,7 @@ class SQL():
             conn.close()
             return df
             
-    def update(self, df, df_name: str, schema: str, target_update: bool, pmkey: str):
+    def update(self, df, df_name: str, schema: str, target_update: bool = None, pmkey: str = None):
         """
             Retrieve the mysql datatable to pandas dataframe
             Parameters:
