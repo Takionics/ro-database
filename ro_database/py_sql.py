@@ -17,7 +17,6 @@ class SQL():
 
         if 'VCAP_SERVICES' in os.environ:
             vcap = json.loads(os.getenv('VCAP_SERVICES'))
-            print('Found VCAP_SERVICES')
 
             # PostgreSQL database
             if 'databases-for-postgresql' in vcap:
@@ -44,6 +43,8 @@ class SQL():
                 self._pgsqlPass = self._pgsqlCreds["authentication"]["password"]
                 self._pgsqlDbname = self._pgsqlCreds["database"]
                 self._pgsqlAlcehmy = self._pgsqlCreds["composed"][0]
+            else:
+                raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
 

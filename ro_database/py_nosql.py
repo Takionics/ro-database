@@ -13,13 +13,13 @@ class NoSQL():
             Initializes NoSQL class and retrieves associated credentials
         """
 
-        if 'NOSQL_ROOT_CRT' in os.environ:
-            self._mongo_cli = MongoClient(
-                mongo_composed,
-                ssl = True,
-                ssl_ca_certs = os.getenv('NOSQL_ROOT_CRT'))
-        else:
-            raise MissingCreds("NOSQL_ROOT_CRT Not found in OS Environment!") 
+        # if 'NOSQL_ROOT_CRT' in os.environ:
+        self._mongo_cli = MongoClient(
+            mongo_composed,
+            ssl = True,
+            ssl_ca_certs = "./../../../app/tmpCert.crt")
+        # else:
+        #     raise MissingCreds("NOSQL_ROOT_CRT Not found in OS Environment!") 
 
         if 'VCAP_SERVICES' in os.environ:
             vcap = json.loads(os.getenv('VCAP_SERVICES'))
