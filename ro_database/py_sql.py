@@ -128,7 +128,7 @@ class SQL():
         """
         try:
             conn = self._alchemy_engine.connect()
-            df.to_sql(df_name, conn, schema=schema, if_exists='replace', chunksize=1000)
+            df.to_sql(df_name, conn, schema=schema, if_exists='replace', index=False, chunksize=1000)
         except Exception as e:
             print(e)
             raise
