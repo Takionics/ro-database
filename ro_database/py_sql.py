@@ -113,7 +113,7 @@ class SQL():
                 else:
                     cols = "*"
 
-                    df = pd.read_sql(f"SELECT {cols} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
+                df = pd.read_sql(f"SELECT {cols} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
                     
             else:
                 if columns:
