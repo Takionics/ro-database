@@ -100,18 +100,18 @@ class SQL():
 
         try:
             conn = self._alchemy_engine.connect()
-            if start_date and end_date:
+
+            if conditionals:
+                
+                if len(conditionals) > 1 and conditional_type:
+                    conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
+                else:
+                    conditionals = f"{conditionals[0]}='{conditionals[1]}'"
+
                 if columns:
                     cols = ",".join(columns)
                 else:
                     cols = "*"
-
-                if conditionals:
-                    
-                    if len(conditionals) > 1 and conditional_type:
-                        conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
-                    else:
-                        conditionals = f"{conditionals[0]}='{conditionals[1]}'"
 
                     df = pd.read_sql(f"SELECT {cols} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
                     
