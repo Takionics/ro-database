@@ -170,18 +170,18 @@ class SQL():
 
         print(sql_command)
             
-        # try:
-            # connection = psycopg2.connect(self._conn_string)
-            # cur = connection.cursor()
-            # connection.autocommit = True
-            # psycopg2.extras.execute_batch(cur, sql_command, records)
-        # except Exception as e:
-            # connection.rollback()
-        #     print(e)
-        #     raise
-        # finally:
-        #     cur.close()
-            # connection.close()
+        try:
+            connection = psycopg2.connect(self._conn_string)
+            cur = connection.cursor()
+            connection.autocommit = True
+            psycopg2.extras.execute_batch(cur, sql_command, records)
+        except Exception as e:
+            connection.rollback()
+            print(e)
+            raise
+        finally:
+            cur.close()
+            connection.close()
 
     # TODO: Need to add statement to empty table rather than drop it
     # def delete(self, table_name, params=None):
