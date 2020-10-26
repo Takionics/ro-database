@@ -106,7 +106,7 @@ class SQL():
                 if len(conditionals) > 1 and conditional_type:
                     conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
                 else:
-                    conditionals = f"{conditionals[0]}='{conditionals[1]}'"
+                    conditionals = f"{conditionals[0][0]}='{conditionals[0][1]}'"
 
                 if columns:
                     cols = ",".join(columns)
