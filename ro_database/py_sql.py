@@ -152,7 +152,7 @@ class SQL():
     #         conn.close()
 
 
-    def update(self, df, df_name: str, schema: str, target_update: bool = None, pmkey: str = None):
+    def update(self, df, df_name: str, schema: str, pmkey: str = None):
 
         column_names = df.columns
         records = [tuple(row) for _, row in df.iterrows()]
