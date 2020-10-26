@@ -85,7 +85,7 @@ class SQL():
             cur.close()
             connection.close()
 
-    def read(self, table_name: str, schema: str, columns: list=None, conditionals: list=None, conditional_type: str=None):
+    def read(self, table_name: str, schema: str, columns: list=None, conditionals: list=None, conditional_type: str=None, date_col: str=None, start_date: str=None, end_date: str=None):
         """
             Retrieve the sql datatable to pandas dataframe
 
@@ -101,20 +101,30 @@ class SQL():
         try:
             conn = self._alchemy_engine.connect()
 
+            where_clause = ""
+
             if conditionals:
-                
-                if len(conditionals) > 1 and conditional_type:
-                    conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
-                else:
-                    conditionals = f"{conditionals[0][0]}='{conditionals[0][1]}'"
 
                 if columns:
-                    cols = ",".join(columns)
+                    columns = ",".join(columns)
                 else:
-                    cols = "*"
+                    columns = "*"
 
-                df = pd.read_sql(f"SELECT {cols} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
-                    
+                if len(conditionals) > 1 and conditional_type:
+                    conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
+                    where_clause += f" {conditionals}"
+                else:
+                    conditionals = f"{conditionals[0][0]}='{conditionals[0][1]}'"
+                    where_clause += f" {conditionals}"
+
+                if date_col and start_date and end_date:
+                    where_clause += f" {date_col} BETWEEN '{start_date}' AND '{end_date}'"
+
+                if where_clause:
+                    df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {conditionals} AND {where_clause}", con=conn)
+                else:
+                    df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
+
             else:
                 if columns:
                     df = pd.read_sql_table(table_name=table_name, columns=columns, schema=schema, con=conn)
