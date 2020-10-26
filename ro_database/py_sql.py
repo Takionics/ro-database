@@ -128,62 +128,60 @@ class SQL():
             return df  
 
 
-    def update(self, df, df_name: str, schema: str, pmkey: str):
-        """
-            Retrieve the mysql datatable to pandas dataframe
-            Parameters:
-                df:           <pandas dataframe>
-                              dataframe to be uploaded or updated on SQL DB
-                df_name:       <str>
-                               data table name
-                target_update: <bool>
-                                update columns of interest
+    # def update(self, df, df_name: str, schema: str, pmkey: str):
+    #     """
+    #         Retrieve the mysql datatable to pandas dataframe
+    #         Parameters:
+    #             df:           <pandas dataframe>
+    #                           dataframe to be uploaded or updated on SQL DB
+    #             df_name:       <str>
+    #                            data table name
+    #             target_update: <bool>
+    #                             update columns of interest
                 
-                records_step: <int>
-                              number of rows to update/upload per bulk
-        """
-        try:
-            conn = self._alchemy_engine.connect()
-            df.to_sql(df_name, conn, schema=schema, if_exists='append', index=False, chunksize=1000)
-        except Exception as e:
-            print(e)
-            raise
-        finally:
-            conn.close()
-
-
-    # def update(self, df, df_name: str, schema: str, target_update: bool = None, pmkey: str = None):
-
-    #     column_names = df.columns
-    #     records = [tuple(row) for _, row in df.iterrows()]
-
-    #     # print(records)
-
-    #     # get the sql command
-    #     df_name = f"{schema}.{df_name}"
-    #     dt_sql = "{} ({})".format(df_name, ','.join(column_names))
-    #     df_sql = "VALUES({}{})".format("%s," * (len(column_names) - 1), "%s")
-        
-    #     sql_command = f"""INSERT INTO {df_name} {df_sql}"""
-        
-    #     if target_update:
-    #         update_command = f"ON CONFLICT ({pmkey}) DO UPDATE SET " + ", ".join([f"{x}=excluded.{x}" for x in df.columns.tolist()])
-    #         sql_command = " ".join([sql_command, update_command])
-
-    #         print(sql_command)
-            
+    #             records_step: <int>
+    #                           number of rows to update/upload per bulk
+    #     """
     #     try:
-    #         connection = psycopg2.connect(self._conn_string)
-    #         cur = connection.cursor()
-    #         connection.autocommit = True
-    #         psycopg2.extras.execute_batch(cur, sql_command, records)
+    #         conn = self._alchemy_engine.connect()
+    #         df.to_sql(df_name, conn, schema=schema, if_exists='append', index=False, chunksize=1000)
     #     except Exception as e:
-    #         connection.rollback()
     #         print(e)
     #         raise
     #     finally:
-    #         cur.close()
-    #         connection.close()
+    #         conn.close()
+
+
+    def update(self, df, df_name: str, schema: str, target_update: bool = None, pmkey: str = None):
+
+        column_names = df.columns
+        records = [tuple(row) for _, row in df.iterrows()]
+
+        # print(records)
+
+        # get the sql command
+        df_name = f"{schema}.{df_name}"
+        dt_sql = "{} ({})".format(df_name, ','.join(column_names))
+        df_sql = "VALUES({}{})".format("%s," * (len(column_names) - 1), "%s")
+        
+        sql_command = f"""INSERT INTO {df_name} {df_sql}"""
+        update_command = f"ON CONFLICT ({pmkey}) DO UPDATE SET " + ", ".join([f"{x}=excluded.{x}" for x in df.columns.tolist()])
+        sql_command = " ".join([sql_command, update_command])
+
+        print(sql_command)
+            
+        # try:
+            # connection = psycopg2.connect(self._conn_string)
+            # cur = connection.cursor()
+            # connection.autocommit = True
+            # psycopg2.extras.execute_batch(cur, sql_command, records)
+        # except Exception as e:
+            # connection.rollback()
+        #     print(e)
+        #     raise
+        # finally:
+        #     cur.close()
+            # connection.close()
 
     # TODO: Need to add statement to empty table rather than drop it
     # def delete(self, table_name, params=None):
