@@ -85,7 +85,7 @@ class SQL():
             cur.close()
             connection.close()
 
-    def read(self, table_name: str, schema: str, columns: list=None):
+    def read(self, table_name: str, schema: str, columns: list=None, conditionals: list=None, conditional_type: str=None):
         """
             Retrieve the sql datatable to pandas dataframe
 
@@ -100,16 +100,32 @@ class SQL():
 
         try:
             conn = self._alchemy_engine.connect()
-            if columns:
-                df = pd.read_sql_table(table_name=table_name, columns=columns, schema=schema, con=conn)
+            if start_date and end_date:
+                if columns:
+                    cols = ",".join(columns)
+                else:
+                    cols = "*"
+
+                if conditionals and conditional_type:
+                    
+                    if len(conditionals) > 1:
+                        conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
+                    else:
+                        conditionals = f"{conditionals[0]}='{conditionals[1]}'"
+                        
+                    df = pd.read_sql(f"SELECT {cols} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
+                    
             else:
-                df = pd.read_sql_table(table_name=table_name, schema=schema, con=conn)
+                if columns:
+                    df = pd.read_sql_table(table_name=table_name, columns=columns, schema=schema, con=conn)
+                else:
+                    df = pd.read_sql_table(table_name=table_name, schema=schema, con=conn)
         except Exception as e:
             print(e)
             raise
         else:
             conn.close()
-            return df
+            return df  
 
 
     def update(self, df, df_name: str, schema: str, pmkey: str):
