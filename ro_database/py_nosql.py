@@ -38,7 +38,7 @@ class NoSQL():
         self._mongo_cli = MongoClient(
             mongo_composed,
             ssl = True,
-            ssl_ca_certs = "./../../../app/tmpCert.crt")
+            ssl_ca_certs = "/../../../app/tmpCert.crt")
 
     def get_database(self, db_name):
         """
