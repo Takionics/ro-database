@@ -31,14 +31,14 @@ class NoSQL():
                 mongoCreds = vcap["databases-for-mongodb"][0]["credentials"]
                 mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
             else:
-                raise MissingCreds("NoSQL creds not fouund in OS Environment!")
+                raise MissingCreds("NoSQL creds not found in OS Environment!")
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!") 
 
         self._mongo_cli = MongoClient(
             mongo_composed,
             ssl = True,
-            ssl_ca_certs = "./../../../tmpCert.crt")
+            ssl_ca_certs = "/../../../app/tmpCert.crt")
 
     def get_database(self, db_name):
         """
