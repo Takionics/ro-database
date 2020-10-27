@@ -30,8 +30,8 @@ class COS():
                 COS_RESOURCE_CRN = s3Credential['resource_instance_id']
             else:
                 raise MissingCreds("COS creds not fouund in OS Environment!")
-        elif os.path.isfile('/../../../app/vcap_services.json'):
-            with open('/../../../app/vcap_services.json') as f:
+        elif os.path.isfile('vcap_services.json'):
+            with open('vcap_services.json') as f:
                 vcap = json.load(f)
                 print('Found local VCAP_SERVICES')
 

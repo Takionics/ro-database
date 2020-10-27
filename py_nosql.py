@@ -22,8 +22,8 @@ class NoSQL():
                 mongo_composed = mongoCreds["connection"]["mongodb"]["composed"][0]
             else:
                 raise MissingCreds("NoSQL creds not fouund in OS Environment!")
-        elif os.path.isfile('/../../../app/vcap_services.json'):
-            with open('/../../../app/vcap_services.json') as f:
+        elif os.path.isfile('vcap_services.json'):
+            with open('vcap_services.json') as f:
                 vcap = json.load(f)
                 print('Found local VCAP_SERVICES')
 
@@ -38,7 +38,7 @@ class NoSQL():
         self._mongo_cli = MongoClient(
             mongo_composed,
             ssl = True,
-            ssl_ca_certs = "/../../../app/tmpCert.crt")
+            ssl_ca_certs = "tmpCert.crt")
 
     def get_database(self, db_name):
         """
