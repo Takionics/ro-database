@@ -55,7 +55,7 @@ class SQL():
                             " password="+self._pgsqlPass
 
         
-        self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
+        self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': 'root.crt'})
  
     def create(self, table_name: str, table_structure: list):
         """
