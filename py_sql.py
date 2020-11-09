@@ -55,7 +55,7 @@ class SQL():
                             " password="+self._pgsqlPass
 
         
-        self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': 'root.crt'})
+        self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
  
     def create(self, table_name: str, table_structure: list):
         """
@@ -118,10 +118,13 @@ class SQL():
                     where_clause += f" {conditionals}"
 
                 if date_col and start_date and end_date:
-                    where_clause += f" {date_col} BETWEEN '{start_date}' AND '{end_date}'"
+                    where_clause += f" AND {date_col} BETWEEN '{start_date}' AND '{end_date}'"
 
                 if where_clause:
-                    df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {conditionals} AND {where_clause}", con=conn)
+
+                    print(f"SELECT {columns} FROM {schema}.{table_name} WHERE {where_clause}")
+
+                    df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {where_clause}", con=conn)
                 else:
                     df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
 
@@ -175,10 +178,10 @@ class SQL():
         df_sql = "VALUES({}{})".format("%s," * (len(column_names) - 1), "%s")
         
         sql_command = f"""INSERT INTO {df_name} {df_sql}"""
-        update_command = f"ON CONFLICT ({pmkey}) DO UPDATE SET " + ", ".join([f"{x}=excluded.{x}" for x in df.columns.tolist()])
-        sql_command = " ".join([sql_command, update_command])
 
-        print(sql_command)
+        if pmkey:
+            update_command = f"ON CONFLICT ({pmkey}) DO UPDATE SET " + ", ".join([f"{x}=excluded.{x}" for x in df.columns.tolist()])
+            sql_command = " ".join([sql_command, update_command])
             
         try:
             connection = psycopg2.connect(self._conn_string)
