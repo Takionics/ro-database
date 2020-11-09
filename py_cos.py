@@ -1,237 +1,253 @@
-# PostgreSQL & SQL Alchemy Library imports
+# Cloud object storage library imports
+import io
 import os
 import json
-import psycopg2
-import pandas as pd
+import ibm_boto3
 
 from utils import *
-from sqlalchemy import create_engine
+from ibm_botocore.client import Config, ClientError
 
-class SQL(): 
+class COS():
 
     def __init__(self):
         """
-            Initializes SQL class by creating a SQL managed resource pool and 
-            retrieving pool credentials.
+            Initializes COS class by:
+                1. initializing ibm_boto3 COS resource portal
+                2. initializing ibm_boto3 COS client portal
+                3. initializing ibm_boto3 transfer configuration settings
         """
 
         if 'VCAP_SERVICES' in os.environ:
             vcap = json.loads(os.getenv('VCAP_SERVICES'))
+            print('Found VCAP_SERVICES')
 
-            # PostgreSQL database
-            if 'databases-for-postgresql' in vcap:
-                self._pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
-                self._pgsqlHost = self._pgsqlCreds["hosts"][0]["hostname"]
-                self._pgsqlPort = self._pgsqlCreds["hosts"][0]["port"]
-                self._pgsqlUser = self._pgsqlCreds["authentication"]["username"]
-                self._pgsqlPass = self._pgsqlCreds["authentication"]["password"]
-                self._pgsqlDbname = self._pgsqlCreds["database"]
-                self._pgsqlAlcehmy = self._pgsqlCreds["composed"][0]
+            # Cloud object storage
+            if 'cloud-object-storage' in vcap:
+                s3Credential = vcap['cloud-object-storage'][0]['credentials']
+                COS_ENDPOINT = os.getenv('COS_ENDPOINT') #'https://s3.us-east.cloud-object-storage.appdomain.cloud'
+                COS_API_KEY_ID = s3Credential['apikey']
+                COS_AUTH_ENDPOINT = "https://iam.cloud.ibm.com/identity/token"
+                COS_RESOURCE_CRN = s3Credential['resource_instance_id']
             else:
-                raise MissingCreds("SQL creds not fouund in OS Environment!")
+                raise MissingCreds("COS creds not fouund in OS Environment!")
         elif os.path.isfile('vcap_services.json'):
             with open('vcap_services.json') as f:
                 vcap = json.load(f)
                 print('Found local VCAP_SERVICES')
-                
-            # PostgreSQL database
-            if 'databases-for-postgresql' in vcap:
-                self._pgsqlCreds = vcap['databases-for-postgresql'][0]["credentials"]["connection"]["postgres"]
-                self._pgsqlHost = self._pgsqlCreds["hosts"][0]["hostname"]
-                self._pgsqlPort = self._pgsqlCreds["hosts"][0]["port"]
-                self._pgsqlUser = self._pgsqlCreds["authentication"]["username"]
-                self._pgsqlPass = self._pgsqlCreds["authentication"]["password"]
-                self._pgsqlDbname = self._pgsqlCreds["database"]
-                self._pgsqlAlcehmy = self._pgsqlCreds["composed"][0]
-            else:
-                raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
+
+                # Cloud object storage
+                if 'cloud-object-storage' in vcap:
+                    s3Credential = vcap['cloud-object-storage'][0]['credentials']
+                    COS_ENDPOINT = os.getenv('COS_ENDPOINT') #'https://s3.us-east.cloud-object-storage.appdomain.cloud'
+                    COS_API_KEY_ID = s3Credential['apikey']
+                    COS_AUTH_ENDPOINT = "https://iam.cloud.ibm.com/identity/token"
+                    COS_RESOURCE_CRN = s3Credential['resource_instance_id']
+                else:
+                    raise MissingCreds("Local COS creds not found!")
         else:
             raise MissingCreds("VCAP_SERVICES Not found in OS Environment!")
-
-        self._conn_string = "host="+self._pgsqlHost+ \
-                            " port="+str(self._pgsqlPort)+ \
-                            " dbname="+self._pgsqlDbname+\
-                            " user="+self._pgsqlUser+\
-                            " password="+self._pgsqlPass
-
-        
-        self._alchemy_engine = create_engine(self._pgsqlAlcehmy, connect_args={'sslrootcert': os.getenv('POSTGRESQL_ROOT_CRT')})
- 
-    def create(self, table_name: str, table_structure: list):
-        """
-            Creates new SQL table
-
-            Parameters:
-                table_name:       <str>
-                                  name of data table
-                
-                table_structure:  <list>
-                                  list of strings where each entry contains:
-                                  1. column name
-                                  2. column type & limits
-                                  3. whether column allows null values or not
-        """
-        primary_key = table_structure[-1]
-        table = ", ".join(table_structure[:-1])
-        cmd = f"CREATE TABLE {table_name} ({table}, PRIMARY KEY ({primary_key}));"
-        try:
-            connection = psycopg2.connect(self._conn_string, sslrootcert="root.crt")
-            cur = connection.cursor()
-            cur.execute(cmd)
-        except Exception as e:
-            print(e)
-            raise        
-        finally:
-            cur.close()
-            connection.close()
-
-    def read(self, table_name: str, schema: str, columns: list=None, conditionals: list=None, conditional_type: str=None, date_col: str=None, start_date: str=None, end_date: str=None):
-        """
-            Retrieve the sql datatable to pandas dataframe
-
-            Parameters:
-                table_name: sql table name
-                schema:     sql schema name
-                column:     columns to retrieve from database
-                
-            Return: 
-                df:         sql table
-        """
-
-        try:
-            conn = self._alchemy_engine.connect()
-
-            where_clause = ""
-
-            if conditionals:
-
-                if columns:
-                    columns = ",".join(columns)
-                else:
-                    columns = "*"
-
-                if len(conditionals) > 1 and conditional_type:
-                    conditionals = f" {conditional_type} ".join([f"{x[0]}='{x[1]}'" for x in conditionals])
-                    where_clause += f" {conditionals}"
-                else:
-                    conditionals = f"{conditionals[0][0]}='{conditionals[0][1]}'"
-                    where_clause += f" {conditionals}"
-
-                if date_col and start_date and end_date:
-                    where_clause += f" AND {date_col} BETWEEN '{start_date}' AND '{end_date}'"
-
-                if where_clause:
-
-                    print(f"SELECT {columns} FROM {schema}.{table_name} WHERE {where_clause}")
-
-                    df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {where_clause}", con=conn)
-                else:
-                    df = pd.read_sql(f"SELECT {columns} FROM {schema}.{table_name} WHERE {conditionals}", con=conn)
-
-            else:
-                if columns:
-                    df = pd.read_sql_table(table_name=table_name, columns=columns, schema=schema, con=conn)
-                else:
-                    df = pd.read_sql_table(table_name=table_name, schema=schema, con=conn)
-        except Exception as e:
-            print(e)
-            raise
-        else:
-            conn.close()
-            return df  
-
-
-    # def update(self, df, df_name: str, schema: str, pmkey: str):
-    #     """
-    #         Retrieve the mysql datatable to pandas dataframe
-    #         Parameters:
-    #             df:           <pandas dataframe>
-    #                           dataframe to be uploaded or updated on SQL DB
-    #             df_name:       <str>
-    #                            data table name
-    #             target_update: <bool>
-    #                             update columns of interest
-                
-    #             records_step: <int>
-    #                           number of rows to update/upload per bulk
-    #     """
-    #     try:
-    #         conn = self._alchemy_engine.connect()
-    #         df.to_sql(df_name, conn, schema=schema, if_exists='append', index=False, chunksize=1000)
-    #     except Exception as e:
-    #         print(e)
-    #         raise
-    #     finally:
-    #         conn.close()
-
-
-    def update(self, df, df_name: str, schema: str, pmkey: str = None):
-
-        column_names = df.columns
-        records = [tuple(row) for _, row in df.iterrows()]
-
-        # print(records)
-
-        # get the sql command
-        df_name = f"{schema}.{df_name}"
-        dt_sql = "{} ({})".format(df_name, ','.join(column_names))
-        df_sql = "VALUES({}{})".format("%s," * (len(column_names) - 1), "%s")
-        
-        sql_command = f"""INSERT INTO {df_name} {df_sql}"""
-
-        if pmkey:
-            update_command = f"ON CONFLICT ({pmkey}) DO UPDATE SET " + ", ".join([f"{x}=excluded.{x}" for x in df.columns.tolist()])
-            sql_command = " ".join([sql_command, update_command])
             
+
+        self._cos_re = ibm_boto3.resource(
+            service_name="s3",
+            ibm_api_key_id=COS_API_KEY_ID,
+            ibm_service_instance_id=COS_RESOURCE_CRN,
+            endpoint_url=COS_ENDPOINT,
+            ibm_auth_endpoint=COS_AUTH_ENDPOINT,
+            config=Config(signature_version="oauth"))
+
+        self._cos_cli = ibm_boto3.client(
+            service_name="s3",
+            ibm_api_key_id=COS_API_KEY_ID,
+            ibm_service_instance_id=COS_RESOURCE_CRN,
+            endpoint_url=COS_ENDPOINT,
+            ibm_auth_endpoint=COS_AUTH_ENDPOINT,
+            config=Config(signature_version="oauth"))
+
+        self._transfer_config = ibm_boto3.s3.transfer.TransferConfig(
+                # set chunksize to 5 MB chunks
+                # set max file threshold to 15 MB
+                multipart_threshold=1024 * 1024 * 15,
+                multipart_chunksize=1024 * 1024 * 5)
+
+    def create_bucket(self, bucket_name, cos_bucket_location = "us-south-smart"):
+        """
+            Creates smart tier COS bucket
+            Parameters:
+                bucket_name:         <str>
+                                     name of bucket to create
+                cos_bucket_location: <str>
+                                     regional location of COS bucket
+        """
+        print(f"Creating new bucket: {bucket_name}")
         try:
-            connection = psycopg2.connect(self._conn_string)
-            cur = connection.cursor()
-            connection.autocommit = True
-            psycopg2.extras.execute_batch(cur, sql_command, records)
+            self._cos_re.Bucket(bucket_name).create(CreateBucketConfiguration={"LocationConstraint":cos_bucket_location})
+            print(f"Bucket: {bucket_name} created!")
+        except ClientError as be:
+            print(f"CLIENT ERROR: {be}")
         except Exception as e:
-            connection.rollback()
-            print(e)
+            print(f"Unable to create bucket: {e}")
+
+    def get_buckets(self):
+        """
+            Retrieves list of avaliable buckets
+        """
+        print("Retrieving list of buckets")
+        try:
+            buckets = self._cos_re.buckets.all()
+            buckets = [bucket.name for bucket in buckets]
+        except ClientError as be:
+            print(f"CLIENT ERROR: {be}")
+        except Exception as e:
+            print(f"Unable to retrieve list buckets: {e}")
+        else:
+            return buckets
+
+    def get_bucket_contents(self, bucket_name, prefix="", max_keys=100000):
+        """
+            Retrieves list of bucket contents with limit of 100000 list entries
+            by default unless limit is otherwise specified
+            Parameters:
+                bucket_name:  <str>
+                              name of target bucket
+                prefix:       <str>
+                              file prefix in order to locate file if in folder structure
+                              directory environment
+                max_keys:     <int>
+                              limit or number of files keys to retrieve
+            Response:
+                files:        <list>
+                              list of file names in target bucket
+        """
+        print("Retrieving bucket contents from: {0}".format(bucket_name))
+        try:
+            # create client object
+            files = []
+            next_token = ""
+            more_results = True
+
+            while (more_results):
+                if prefix:
+                    response = self._cos_cli.list_objects_v2(
+                        Prefix=prefix,
+                        Bucket=bucket_name, 
+                        MaxKeys=max_keys, 
+                        ContinuationToken=next_token)
+                else:
+                    response = self._cos_cli.list_objects_v2(
+                        Bucket=bucket_name, 
+                        MaxKeys=max_keys, 
+                        ContinuationToken=next_token)
+                
+                batch_files = [file["Key"] for file in response["Contents"]]
+                files.extend(batch_files)
+
+                if response["IsTruncated"]:
+                    next_token = response["NextContinuationToken"]
+                else:
+                    next_token = ""
+                    more_results = False
+
+        except ClientError as be:
+            print("CLIENT ERROR: {0}\n".format(be))
+        except Exception as e:
+            print("Unable to retrieve bucket contents: {0}".format(e))
+        else:
+            return files
+
+    def get_item(self, bucket_name, item_name):
+        """
+            Retrieves target file in target bucket
+            Parameters:
+                bucket_name:  <str>
+                              name of target bucket
+                item_name:    <str>
+                              name of target file in bucket
+            Response:
+                item:        <dict>
+                             target item contents in dict format 
+        """
+        print(f"Retrieving item from bucket: {bucket_name}, key: {item_name}")
+        try:
+            file = self._cos_re.Object(bucket_name, item_name).get()
+        except ClientError as be:
+            print(f"CLIENT ERROR: {be}")
+        except Exception as e:
+            print(f"Unable to retrieve file contents: {e}")
+        else:
+            file = io.BytesIO(file["Body"].read())
+            item = pd.read_csv(file)
+            return item
+
+    def upload_file_cos(self, bucket_name, item_name, file):
+        """
+            Uploads to target bucket
+            Parameters:
+                bucket_name:  <str>
+                              name of target bucket
+                item_name:    <str>
+                              name of target file in bucket
+                file:         <bytes>
+                              binarized version of file to be uploaded
+        """        
+        try:
+            print(f"Starting file transfer for {item_name} to bucket: {bucket_name}")
+            self._cos_re.Object(bucket_name, item_name).upload_fileobj(
+                Fileobj=file,
+                Config=self._transfer_config)
+            print(f"Transfer for {item_name} Complete!")
+        except ClientError as be:
+            print(f"CLIENT ERROR: {be}")
+        except Exception as e:
+            print(f"Unable to complete multi-part upload: {e}")
+
+    def delete_file_cos(self, bucket_name, item_name):
+        """
+            Delete target file in target bucket
+            Parameters:
+                bucket_name:  <str>
+                              name of target bucket
+                item_name:    <str>
+                              name of target file in bucket
+        """    
+        print(f"Deleting item: {item_name}")
+        try:
+            self._cos_re.Object(bucket_name, item_name).delete()
+        except ClientError as be:
+            print(f"CLIENT ERROR: {be}")
+        except Exception as e:
+            print(f"Unable to delete item: {e}")
+
+    # TODO: may need to create a function to empty bucket contents first before deleting
+    def delete_bucket(self, bucket_name):
+        """
+            Delete target bucket
+            Parameters:
+                bucket_name:  <str>
+                              name of target bucket
+        """    
+        print(f"Creating new bucket: {bucket_name}")
+        try:
+            self._cos_re.Bucket(bucket_name).delete()
+            print(f"Bucket: {bucket_name} delete.")
+        except ClientError as e:
+            print(f"CLIENT ERROR: {e}")
             raise
-        finally:
-            cur.close()
-            connection.close()
+        except Exception as e:
+            print(f"Unable to delete bucket: {e}")
+            raise
 
-    # TODO: Need to add statement to empty table rather than drop it
-    # def delete(self, table_name, params=None):
-    #     """
-    #         Deletes data table
-
-    #         Parameters:
-    #             table_name:   <str>
-    #                           target table
-
-    #             params:       <dict>
-    #                           parameters specified to delete table contents
-    #     """
-    #     if params:
-    #         statements = []
-    #         for key, vals in params.items():
-    #             if len(vals) > 1:
-    #                 conditions = " OR ".join([f"{key}='{val}'" for val in vals])
-    #                 conditions = f"({conditions})"
-    #             else:
-    #                 conditions = f"{key}='{vals}'"
-    #             statements.append(conditions)
-    #         statements = " AND ".join(statements)
-    #         cmd = f"DELETE FROM {table_name} WHERE {statements}"
-    #     else:
-    #         cmd = f"DROP TABLE IF EXISTS {table_name};"
-        
-    #     try:
-    #         connection = psycopg2.connect(self._conn_string)
-    #         cur = connection.cursor()
-    #         cur.execute(cmd)
-    #     except Exception as e:
-    #         print(e)
-    #         raise            
-    #     finally:
-    #         cur.close()
-    #         connection.close()
+    def create_text_file(self, bucket_name, item_name, file_text):
+        print("Creating new item: {0}".format(item_name))
+        try:
+            self._cos_re.Object(bucket_name, item_name).put(Body=file_text)
+            print("Item: {0} created!".format(item_name))
+        except ClientError as be:
+            print("CLIENT ERROR: {0}\n".format(be))
+            # raise
+        except Exception as e:
+            print("Unable to create text file: {0}".format(e))
+            # raise
 
 if __name__ == '__main__':
-    py_sql = SQL()
+    py_cos = COS()
